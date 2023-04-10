@@ -7,10 +7,10 @@ package com.saveourtool.processbuilder
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.DetektPlugin
 import io.gitlab.arturbosch.detekt.extensions.DetektExtension
+import io.gitlab.arturbosch.detekt.report.ReportMergeTask
 import org.gradle.api.Project
-import org.gradle.kotlin.dsl.apply
-import org.gradle.kotlin.dsl.configure
-import org.gradle.kotlin.dsl.withType
+import org.gradle.api.tasks.TaskProvider
+import org.gradle.kotlin.dsl.*
 
 /**
  * Configure Detekt for a single project
@@ -20,6 +20,17 @@ fun Project.configureDetekt() {
     configure<DetektExtension> {
         config = rootProject.files("detekt.yml")
         buildUponDefaultConfig = true
+    }
+    @Suppress("GENERIC_VARIABLE_WRONG_DECLARATION")
+    val reportMerge: TaskProvider<ReportMergeTask> = rootProject.tasks.named<ReportMergeTask>("mergeDetektReports") {
+        input.from(
+            tasks.withType<Detekt>().map { it.sarifReportFile }
+        )
+        shouldRunAfter(tasks.withType<Detekt>())
+    }
+    tasks.withType<Detekt>().configureEach {
+        reports.sarif.required.set(true)
+        finalizedBy(reportMerge)
     }
 }
 
@@ -31,5 +42,9 @@ fun Project.createDetektTask() {
         allprojects {
             this@register.dependsOn(tasks.withType<Detekt>())
         }
+    }
+
+    tasks.register("mergeDetektReports", ReportMergeTask::class) {
+        output.set(buildDir.resolve("detekt-sarif-reports/detekt-merged.sarif"))
     }
 }
