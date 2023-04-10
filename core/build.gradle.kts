@@ -88,7 +88,6 @@ kotlin {
         val linuxX64Main by getting
         val mingwX64Main by getting
 
-
         val nativeMain by creating {
             dependsOn(commonNonJsMain)
             macosArm64Main.dependsOn(this)
