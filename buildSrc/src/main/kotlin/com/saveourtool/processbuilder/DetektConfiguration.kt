@@ -19,8 +19,26 @@ fun Project.configureDetekt() {
     apply<DetektPlugin>()
     configure<DetektExtension> {
         config = rootProject.files("detekt.yml")
+        basePath = rootDir.canonicalPath
         buildUponDefaultConfig = true
     }
+}
+
+/**
+ * Register a unified detekt task
+ */
+fun Project.createDetektTask() {
+    val detektAllTask = tasks.register("detektAll") {
+        allprojects {
+            this@register.dependsOn(tasks.withType<Detekt>())
+        }
+    }
+
+    tasks.register("mergeDetektReports", ReportMergeTask::class) {
+        mustRunAfter(detektAllTask)
+        output.set(buildDir.resolve("detekt-sarif-reports/detekt-merged.sarif"))
+    }
+
     @Suppress("GENERIC_VARIABLE_WRONG_DECLARATION")
     val reportMerge: TaskProvider<ReportMergeTask> = rootProject.tasks.named<ReportMergeTask>("mergeDetektReports") {
         input.from(
@@ -31,20 +49,5 @@ fun Project.configureDetekt() {
     tasks.withType<Detekt>().configureEach {
         reports.sarif.required.set(true)
         finalizedBy(reportMerge)
-    }
-}
-
-/**
- * Register a unified detekt task
- */
-fun Project.createDetektTask() {
-    tasks.register("detektAll") {
-        allprojects {
-            this@register.dependsOn(tasks.withType<Detekt>())
-        }
-    }
-
-    tasks.register("mergeDetektReports", ReportMergeTask::class) {
-        output.set(buildDir.resolve("detekt-sarif-reports/detekt-merged.sarif"))
     }
 }
