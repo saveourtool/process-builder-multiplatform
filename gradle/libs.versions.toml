@@ -1,7 +1,7 @@
 [versions]
 kotlin = "1.8.20"
 kotlinx-datetime = "0.4.0"
-kotlinx-coroutines = "1.6.3-native-mt"
+kotlinx-coroutines = "1.6.4"
 okio = "3.3.0"
 # linters
 diktat = "1.2.5"

@@ -37,7 +37,7 @@ jobs:
         with:
           path: ~/.konan
           key: ${{ runner.os }}-gradle-konan-${{ env.KOTLIN_VERSION }}
-      - name: Build all (excluding save-orchestrator-common, save-orchestrator and save-sandbox)
+      - name: Build
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: wrapper
@@ -45,7 +45,6 @@ jobs:
           arguments: |
             build
             -x detekt
-            -x spotlessCheck
             -Pdetekt.multiplatform.disabled=true
             -PgprUser=${{ github.actor }}
             -PgprKey=${{ secrets.GITHUB_TOKEN }}
