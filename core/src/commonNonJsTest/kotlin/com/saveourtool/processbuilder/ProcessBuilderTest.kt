@@ -7,7 +7,6 @@ import com.saveourtool.processbuilder.utils.isCurrentOsWindows
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@Suppress("INLINE_CLASS_CAN_BE_USED")
 class ProcessBuilderTest {
     private val processBuilder = ProcessBuilder(useInternalRedirections = true, fs)
 
@@ -31,20 +30,11 @@ class ProcessBuilderTest {
     }
 
     @Test
-    @Suppress("SAY_NO_TO_VAR")
     fun `check stdout with redirection`() {
         val actualResult = processBuilder.exec("echo something >/dev/null", "", null, 10_000L)
-        val expectedCode: Int
-        lateinit var expectedStderr: List<String>
-        when {
-            isCurrentOsWindows() -> {
-                expectedCode = 1
-                expectedStderr = listOf("The system cannot find the path specified.")
-            }
-            else -> {
-                expectedCode = 0
-                expectedStderr = emptyList()
-            }
+        val (expectedCode, expectedStderr) = when {
+            isCurrentOsWindows() -> 1 to listOf("The system cannot find the path specified.")
+            else -> 0 to emptyList()
         }
         assertEquals(expectedCode, actualResult.code)
         assertEquals(emptyList(), actualResult.stdout)
