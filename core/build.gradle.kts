@@ -1,4 +1,5 @@
 import com.saveourtool.processbuilder.configureDetekt
+import com.saveourtool.processbuilder.configureDiktat
 
 plugins {
     kotlin("multiplatform")
@@ -25,7 +26,7 @@ kotlin {
     linuxX64()
     macosX64()
     mingwX64()
-    
+
     sourceSets {
         all {
             languageSettings.optIn("kotlin.RequiresOptIn")
@@ -105,4 +106,9 @@ kotlin {
     }
 }
 
+rootProject.extensions.configure<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension> {
+    lockFileDirectory = rootProject.projectDir
+}
+
 configureDetekt()
+configureDiktat()
