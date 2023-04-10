@@ -8,7 +8,7 @@ import com.saveourtool.processbuilder.NotImplementedInJsError
 import okio.FileSystem
 import okio.Path
 
-actual val fs: FileSystem = throw NotImplementedInJsError()
+actual val fs: FileSystem = NotImplementedInJsError()
 
 /**
  * Delete this directory and all other files and directories in it
