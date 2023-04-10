@@ -4,7 +4,7 @@ import com.saveourtool.processbuilder.configureDiktat
 import com.saveourtool.processbuilder.createDetektTask
 
 group = "com.saveourtool"
-description = "Multiplatform ProcessBuilder implementation"
+description = "Kotlin Process Builder"
 
 plugins {
     id("org.cqfn.diktat.diktat-gradle-plugin")
