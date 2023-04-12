@@ -1,4 +1,5 @@
 
+import com.saveourtool.processbuilder.configureDetekt
 import com.saveourtool.processbuilder.configureDiktat
 import com.saveourtool.processbuilder.createDetektTask
 
@@ -12,3 +13,4 @@ plugins {
 
 configureDiktat()
 createDetektTask()
+configureDetekt()

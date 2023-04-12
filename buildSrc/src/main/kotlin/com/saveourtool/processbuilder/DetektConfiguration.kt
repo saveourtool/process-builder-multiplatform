@@ -22,32 +22,27 @@ fun Project.configureDetekt() {
         basePath = rootDir.canonicalPath
         buildUponDefaultConfig = true
     }
+
+    val reportMerge: TaskProvider<ReportMergeTask> = rootProject.tasks.named<ReportMergeTask>("mergeDetektReports") {
+        input.from(tasks.withType<Detekt>().map { it.sarifReportFile })
+        shouldRunAfter(tasks.withType<Detekt>())
+    }
+    tasks.withType<Detekt>().configureEach {
+        reports.sarif.required.set(true)
+        finalizedBy(reportMerge)
+    }
 }
 
 /**
  * Register a unified detekt task
  */
 fun Project.createDetektTask() {
-    val detektAllTask = tasks.register("detektAll") {
+    tasks.register("detektAll") {
         allprojects {
             this@register.dependsOn(tasks.withType<Detekt>())
         }
     }
-
     tasks.register("mergeDetektReports", ReportMergeTask::class) {
-        mustRunAfter(detektAllTask)
         output.set(buildDir.resolve("detekt-sarif-reports/detekt-merged.sarif"))
-    }
-
-    @Suppress("GENERIC_VARIABLE_WRONG_DECLARATION")
-    val reportMerge: TaskProvider<ReportMergeTask> = rootProject.tasks.named<ReportMergeTask>("mergeDetektReports") {
-        input.from(
-            tasks.withType<Detekt>().map { it.sarifReportFile }
-        )
-        shouldRunAfter(tasks.withType<Detekt>())
-    }
-    tasks.withType<Detekt>().configureEach {
-        reports.sarif.required.set(true)
-        finalizedBy(reportMerge)
     }
 }
