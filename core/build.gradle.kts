@@ -13,15 +13,6 @@ kotlin {
             useJUnitPlatform()
         }
     }
-    js(IR) {
-        browser {
-            commonWebpackConfig {
-                cssSupport {
-                    enabled.set(true)
-                }
-            }
-        }
-    }
 
     macosArm64()
     macosX64()
@@ -43,19 +34,7 @@ kotlin {
             }
         }
 
-        val commonTest by getting
-
-        /**
-         * js is supported in order to allow using ProcessBuilder in common section
-         * js tests make no sense so common tests are targeted as commonNonJsTest
-         * commonNonJsMain is required in order to make commonNonJsTest resolvable
-         */
-        val commonNonJsMain by creating {
-            dependsOn(commonMain)
-        }
-
-        val commonNonJsTest by creating {
-            dependsOn(commonTest)
+        val commonTest by getting {
             dependencies {
                 implementation(libs.okio.fakefilesystem)
                 implementation(libs.kotest.assertions.core)
@@ -65,22 +44,18 @@ kotlin {
         }
 
         val jvmMain by getting {
-            dependsOn(commonNonJsMain)
+            dependsOn(commonMain)
             dependencies {
                 implementation(libs.slf4j)
             }
         }
 
         val jvmTest by getting {
-            dependsOn(commonNonJsTest)
+            dependsOn(commonTest)
             dependencies {
                 implementation(kotlin("test-junit5"))
                 implementation(libs.junit.jupiter.engine)
             }
-        }
-
-        val jsMain by getting {
-            dependsOn(commonNonJsMain)
         }
 
         val macosArm64Main by getting
@@ -89,7 +64,7 @@ kotlin {
         val mingwX64Main by getting
 
         val nativeMain by creating {
-            dependsOn(commonNonJsMain)
+            dependsOn(commonMain)
             macosArm64Main.dependsOn(this)
             macosX64Main.dependsOn(this)
             linuxX64Main.dependsOn(this)
@@ -102,17 +77,13 @@ kotlin {
         val mingwX64Test by getting
 
         val nativeTest by creating {
-            dependsOn(commonNonJsTest)
+            dependsOn(commonTest)
             macosArm64Test.dependsOn(this)
             macosX64Test.dependsOn(this)
             linuxX64Test.dependsOn(this)
             mingwX64Test.dependsOn(this)
         }
     }
-}
-
-rootProject.extensions.configure<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension> {
-    lockFileDirectory = rootProject.projectDir
 }
 
 configureDetekt()
