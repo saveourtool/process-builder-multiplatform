@@ -8,7 +8,6 @@ import com.saveourtool.processbuilder.exceptions.ProcessExecutionException
 import com.saveourtool.processbuilder.exceptions.ProcessTimeoutException
 import com.saveourtool.processbuilder.utils.createFile
 import com.saveourtool.processbuilder.utils.isCurrentOsWindows
-import com.saveourtool.processbuilder.utils.myDeleteRecursively
 import com.saveourtool.processbuilder.utils.readLines
 import io.github.oshai.KotlinLogging
 import okio.FileSystem
@@ -92,7 +91,7 @@ class ProcessBuilder(private val useInternalRedirections: Boolean, private val f
         val stdout = fs.readLines(stdoutFile)
         val stderr = fs.readLines(stderrFile)
 
-        fs.myDeleteRecursively(tmpDir)
+        fs.deleteRecursively(tmpDir)
         logger.trace { "Removed temp directory $tmpDir" }
         if (stderr.isNotEmpty()) {
             logger.debug { "stderr of `$command`:\t${stderr.joinToString("\t")}" }
@@ -158,6 +157,7 @@ class ProcessBuilder(private val useInternalRedirections: Boolean, private val f
             }
             // Command already contains correct signature.
             // We also believe not to met complex cases: `echo a; echo | set /p="a && echo b"`
+            // TODO: https://github.com/saveourtool/process-builder-multiplatform/issues/5
             val cmdWithoutWhitespaces = command.replace(" ", "")
             if (cmdWithoutWhitespaces.contains("echo|set")) {
                 return command
@@ -177,6 +177,7 @@ class ProcessBuilder(private val useInternalRedirections: Boolean, private val f
             val listOfCommands = if (separator != "") command.split(separator) as MutableList<String> else mutableListOf(command)
             listOfCommands.forEachIndexed { index, cmd ->
                 if (cmd.contains("echo")) {
+                    // TODO: https://github.com/saveourtool/process-builder-multiplatform/issues/5
                     var newEchoCommand = cmd.trim(' ').replace("echo ", " echo | set /p dummyName=\"")
                     // Now we need to add closing `"` in proper place
                     // Despite the fact, that we don't expect user redirections, for out internal tests we use them,

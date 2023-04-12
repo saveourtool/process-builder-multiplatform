@@ -6,21 +6,11 @@
 
 package com.saveourtool.processbuilder.utils
 
-import io.github.oshai.KotlinLogging
 import okio.FileSystem
 import okio.Path
 import kotlin.jvm.JvmName
 
 expect val fs: FileSystem
-
-internal val fileUtilsLogger = KotlinLogging.logger { }
-
-/**
- * Delete this directory and all other files and directories in it
- *
- * @param path a path to a directory
- */
-expect fun FileSystem.myDeleteRecursively(path: Path)
 
 /**
  * Create file in [this] [FileSystem], denoted by [Path] [path]
