@@ -8,30 +8,33 @@ import com.saveourtool.processbuilder.exceptions.ProcessExecutionException
 import com.saveourtool.processbuilder.exceptions.ProcessTimeoutException
 import com.saveourtool.processbuilder.utils.createFile
 import com.saveourtool.processbuilder.utils.isCurrentOsWindows
-import com.saveourtool.processbuilder.utils.readLines
+
 import io.github.oshai.KotlinLogging
 import okio.FileSystem
 import okio.Path
-import okio.Path.Companion.toPath
 
-import kotlinx.datetime.Clock
+import kotlin.time.Duration
 
 internal val logger = KotlinLogging.logger { }
 
 /**
  * Class contains common logic for all platforms
  *
- * @property useInternalRedirections whether to collect output for future usage, if false, redirectTo will be ignored
  * @property fs describes the current file system
  */
-class ProcessBuilder(private val useInternalRedirections: Boolean, private val fs: FileSystem) {
+class ProcessBuilder(
+    private val fs: FileSystem,
+    configBuilder: ProcessBuilderConfig.() -> Unit = { },
+) {
+    private val config = ProcessBuilderConfig().apply(configBuilder)
+
     /**
      * Execute [command] and wait for its completion.
      *
      * @param command executable command with arguments
      * @param directory where to execute provided command, i.e. `cd [directory]` will be performed before [command] execution
+     * @param timeOutDuration max command execution time
      * @param redirectTo a file where process output and errors should be redirected. If null, output will be returned as [ExecutionResult.stdout] and [ExecutionResult.stderr].
-     * @param timeOutMillis max command execution time
      * @return [ExecutionResult] built from process output
      * @throws ProcessExecutionException in case of impossibility of command execution
      * @throws ProcessTimeoutException if timeout is exceeded
@@ -44,103 +47,87 @@ class ProcessBuilder(private val useInternalRedirections: Boolean, private val f
     )
     fun exec(
         command: String,
-        directory: String,
-        redirectTo: Path?,
-        timeOutMillis: Long,
+        directory: Path? = config.defaultWorkingDirectory,
+        timeOutDuration: Duration = config.defaultExecutionTimeout,
+        redirectTo: ProcessBuilderConfig.Redirects = config.defaultRedirects,
     ): ExecutionResult {
         if (command.isBlank()) {
             logErrorAndThrowProcessBuilderException("Execution command in ProcessBuilder couldn't be empty!")
         }
-        if (command.contains(">") && useInternalRedirections) {
+        if (config.defaultRedirects !is ProcessBuilderConfig.Redirects.None && command.contains(">")) {
             logger.error {
                 "Found user provided redirections in `$command`. " +
-                        "SAVE will create own redirections for internal purpose, please refuse redirects or use corresponding argument [redirectTo]"
+                        "SAVE will create own redirections for internal purpose, " +
+                        "please refuse redirects or use corresponding argument [redirectTo]"
             }
         }
 
         // Temporary directory for stderr and stdout (posix `system()` can't separate streams, so we do it ourselves)
-        val tmpDir = (FileSystem.SYSTEM_TEMPORARY_DIRECTORY /
-                ("ProcessBuilder_" + Clock.System.now().toEpochMilliseconds()).toPath())
-        logger.trace { "Creating temp directory: $tmpDir" }
         // Path to stdout file
-        val stdoutFile = tmpDir / "stdout.txt"
+        val stdoutFile = redirectTo.redirectStdoutTo
         logger.trace { "Creating stdout file of ProcessBuilder: $stdoutFile" }
         // Path to stderr file
-        val stderrFile = tmpDir / "stderr.txt"
+        val stderrFile = redirectTo.redirectStderrTo
         logger.trace { "Creating stderr file of ProcessBuilder: $stderrFile" }
         // Instance, containing platform-dependent realization of command execution
-        val processBuilderInternal = ProcessBuilderInternal(stdoutFile, stderrFile, useInternalRedirections)
-        fs.createDirectories(tmpDir)
-        fs.createFile(stdoutFile)
-        fs.createFile(stderrFile)
-        logger.trace { "Created temp directory $tmpDir for stderr and stdout of ProcessBuilder" }
+        val processBuilderInternal = ProcessBuilderInternal(redirectTo, config.childProcessUsername)
+
+        stdoutFile?.let {  path ->
+            fs.createFile(path)
+            logger.debug { "Created file $path" }
+        }
+        stderrFile?.let { path ->
+            fs.createFile(path)
+            logger.debug { "Created file $path" }
+        }
 
         val cmd = modifyCmd(command, directory, processBuilderInternal)
 
-        logger.debug { "Executing: $cmd with timeout $timeOutMillis ms" }
-        val status = try {
-            processBuilderInternal.exec(cmd, timeOutMillis)
+        logger.debug { "Executing: $cmd with timeout $timeOutDuration ms" }
+        val executionResult = try {
+            processBuilderInternal.execute(cmd, timeOutDuration)
         } catch (ex: ProcessTimeoutException) {
-            fs.deleteRecursively(tmpDir)
+            stdoutFile?.let { fs.delete(it) }
+            stderrFile?.let { fs.delete(it) }
             throw ex
         } catch (ex: Exception) {
-            fs.deleteRecursively(tmpDir)
+            stdoutFile?.let { fs.delete(it) }
+            stderrFile?.let { fs.delete(it) }
             logErrorAndThrowProcessBuilderException(ex.message ?: "Couldn't execute $cmd")
         }
 
-        val stdout = fs.readLines(stdoutFile)
-        val stderr = fs.readLines(stderrFile)
-
-        fs.deleteRecursively(tmpDir)
-        logger.trace { "Removed temp directory $tmpDir" }
-        if (stderr.isNotEmpty()) {
-            logger.debug { "stderr of `$command`:\t${stderr.joinToString("\t")}" }
+        if (executionResult.stderr.isNotEmpty()) {
+            logger.debug { "stderr of `$command`:\t${executionResult.stderr.joinToString("\t")}" }
         }
-        redirectTo?.let {
-            fs.write(redirectTo) {
-                write(stdout.joinToString("\n").encodeToByteArray())
-                write(stderr.joinToString("\n").encodeToByteArray())
-            }
-        } ?: logger.trace { "Execution output:\t$stdout" }
-        return ExecutionResult(status, stdout, stderr)
+
+        return executionResult
     }
 
     private fun modifyCmd(
         command: String,
-        directory: String,
+        directory: Path?,
         processBuilderInternal: ProcessBuilderInternal,
-    ): String {
-        // If we need to step out into some directory before execution
-        val cdCmd = if (directory.isNotBlank()) {
-            if (isCurrentOsWindows()) {
-                "cd /d $directory && "
-            } else {
-                "cd $directory && "
-            }
-        } else {
-            ""
-        }
-        // Additionally process command for Windows, it it contain `echo`
-        val commandWithEcho = cdCmd + if (isCurrentOsWindows()) {
-            processCommandWithEcho(command)
-        } else {
-            command
-        }
-        logger.trace { "Modified cmd: $commandWithEcho" }
-        // Finally, make platform dependent adaptations
-        return processBuilderInternal.prepareCmd(commandWithEcho)
+    ): String = command
+        .let(::processCommandWithEchoOnWindows)
+        .also { cmd -> logger.trace { "Processed command with echo for windows: $cmd" } }
+        .let { changeWorkingDirectory(command, directory) }
+        .also { cmd -> logger.trace { "Processed command for directory change: $cmd" } }
+        .let(processBuilderInternal::appendShellCommand)
+        .also { cmd -> logger.trace { "Redirected stdout and stderr: $cmd" } }
+        .let(processBuilderInternal::runCommandByNameOfAnotherUser)
+        .also { cmd -> logger.trace { "Modified command to run by name of user ${config.childProcessUsername}: $cmd" } }
+
+    private fun processCommandWithEchoOnWindows(command: String): String = when {
+        isCurrentOsWindows() -> processCommandWithEcho(command)
+        else -> command
     }
 
-    /**
-     * Log error message and throw exception
-     *
-     * @param errMsg error message
-     * @throws ProcessExecutionException
-     */
-    private fun logErrorAndThrowProcessBuilderException(errMsg: String): Nothing {
-        logger.error { errMsg }
-        throw ProcessExecutionException(errMsg)
-    }
+    private fun changeWorkingDirectory(command: String, directory: Path?): String = when {
+        directory == null -> ""
+        directory.segments.isEmpty() -> "".also { logger.warn { "Requested working directory " } }
+        isCurrentOsWindows() -> "cd /d $directory && "
+        else -> "cd $directory && "
+    }.plus(command)
 
     companion object {
         /**
@@ -201,12 +188,12 @@ class ProcessBuilder(private val useInternalRedirections: Boolean, private val f
 }
 
 /**
- * @property code exit code
- * @property stdout content of stdout
- * @property stderr content of stderr
+ * Log error message and throw exception
+ *
+ * @param errMsg error message
+ * @throws ProcessExecutionException
  */
-data class ExecutionResult(
-    val code: Int,
-    val stdout: List<String>,
-    val stderr: List<String>,
-)
+private fun logErrorAndThrowProcessBuilderException(errMsg: String): Nothing {
+    logger.error { errMsg }
+    throw ProcessExecutionException(errMsg)
+}

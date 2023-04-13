@@ -1,6 +1,8 @@
 package com.saveourtool.processbuilder.exceptions
 
+import kotlin.time.Duration
+
 /**
- * @property timeoutMillis
+ * @property timeoutDuration
  */
-class ProcessTimeoutException(val timeoutMillis: Long, message: String) : ProcessExecutionException(message)
+class ProcessTimeoutException(val timeoutDuration: Duration, message: String) : ProcessExecutionException(message)

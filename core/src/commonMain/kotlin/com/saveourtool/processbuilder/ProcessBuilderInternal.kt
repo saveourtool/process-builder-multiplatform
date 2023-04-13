@@ -4,34 +4,41 @@
 
 package com.saveourtool.processbuilder
 
-import okio.Path
+import kotlin.time.Duration
 
 /**
  * A class that is capable of executing processes, specific to different OS and returning their output.
  */
 expect class ProcessBuilderInternal(
-    stdoutFile: Path,
-    stderrFile: Path,
-    useInternalRedirections: Boolean,
+    redirects: ProcessBuilderConfig.Redirects,
+    childProcessUserName: String?,
 ) {
     /**
      * Modify execution command according behavior of different OS,
      * also stdout and stderr will be redirected to tmp files
      *
      * @param command raw command
-     * @return command with redirection of stderr to tmp file
+     * @return command prepared for execution
      */
-    fun prepareCmd(command: String): String
+    fun appendShellCommand(command: String): String
+
+    /**
+     * Modify execution command according to requested executing user
+     *
+     * @param command raw command
+     * @return command with `sudo -u` prepended
+     */
+    fun runCommandByNameOfAnotherUser(command: String): String
 
     /**
      * Execute [cmd] and wait for its completion.
      *
      * @param cmd executable command with arguments
-     * @param timeOutMillis max command execution time
-     * @return exit status
+     * @param timeoutDuration max command execution time
+     * @return [ExecutionResult]
      */
-    fun exec(
+    fun execute(
         cmd: String,
-        timeOutMillis: Long,
-    ): Int
+        timeoutDuration: Duration,
+    ): ExecutionResult
 }

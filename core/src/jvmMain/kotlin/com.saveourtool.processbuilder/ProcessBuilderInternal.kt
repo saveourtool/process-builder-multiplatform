@@ -13,6 +13,7 @@ import okio.Path
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
+import kotlin.time.Duration
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -20,63 +21,64 @@ import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.runBlocking
 
 actual class ProcessBuilderInternal actual constructor(
-    private val stdoutFile: Path,
-    private val stderrFile: Path,
-    private val useInternalRedirections: Boolean,
+    private val redirects: ProcessBuilderConfig.Redirects,
+    private val childProcessUserName: String?,
 ) {
-    actual fun prepareCmd(command: String): String {
-        val cmd = buildList {
-            if (isCurrentOsWindows()) {
-                add("CMD")
-                add("/C")
-            } else {
-                add("sh")
-                add("-c")
-            }
-            add(command)
+    actual fun appendShellCommand(command: String): String = buildList {
+        if (isCurrentOsWindows()) {
+            add("CMD")
+            add("/C")
+        } else {
+            add("sh")
+            add("-c")
         }
-        return cmd.joinToString()
-    }
+        add(command)
+    }.joinToString()
+
+    actual fun runCommandByNameOfAnotherUser(command: String): String = when {
+        childProcessUserName == null -> ""
+        isCurrentOsWindows() -> "runas /user:$childProcessUserName "
+        else -> "sudo -u $childProcessUserName "
+    }.plus(command)
 
     @OptIn(DelicateCoroutinesApi::class)
     @Suppress("UnsafeCallOnNullableType")
-    actual fun exec(
+    actual fun execute(
         cmd: String,
-        timeOutMillis: Long,
-    ): Int {
+        timeoutDuration: Duration,
+    ): ExecutionResult {
         var status = -1
+        var stdout: List<String> = emptyList()
+        var stderr: List<String> = emptyList()
         runBlocking {
-            val processContext = newFixedThreadPoolContext(2, "timeOut")
+            val processContext = newFixedThreadPoolContext(2, "TimeOutWatcher")
 
             val runTime = Runtime.getRuntime()
             var process: Process? = null
             val job = launch(processContext) {
                 val timeOut = launch {
-                    delay(timeOutMillis)
+                    delay(timeoutDuration)
                     process?.destroy()
-                    throw ProcessTimeoutException(timeOutMillis, "Timeout is reached: $timeOutMillis")
+                    throw ProcessTimeoutException(timeoutDuration, "Timeout is reached: $timeoutDuration")
                 }
                 launch {
                     process = runTime.exec(cmd.split(", ").toTypedArray())
-                    writeDataFromBufferToFile(process!!, "stdout", stdoutFile)
-                    writeDataFromBufferToFile(process!!, "stderr", stderrFile)
+                    stdout = writeDataFromBufferToFile(process!!, "stdout", redirects.redirectStdoutTo)
+                    stderr = writeDataFromBufferToFile(process!!, "stderr", redirects.redirectStdoutTo)
                     status = process!!.waitFor()
                     timeOut.cancel()
                 }
             }
             job.join()
         }
-        return status
+        return ExecutionResult(status, stdout, stderr)
     }
 
     private fun writeDataFromBufferToFile(
         process: Process,
         stream: String,
-        file: Path,
-    ) {
-        if (!useInternalRedirections) {
-            return
-        }
+        file: Path?,
+    ): List<String> {
         val br = BufferedReader(
             InputStreamReader(
                 if (stream == "stdout") {
@@ -86,11 +88,12 @@ actual class ProcessBuilderInternal actual constructor(
                 }
             )
         )
-        val data = br.useLines {
-            it.joinToString("\n")
+        val data = br.readLines()
+        file?.let {
+            fs.write(file) {
+                write(data.joinToString("\n").encodeToByteArray())
+            }
         }
-        fs.write(file) {
-            write(data.encodeToByteArray())
-        }
+        return data
     }
 }

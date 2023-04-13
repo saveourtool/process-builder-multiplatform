@@ -5,11 +5,13 @@
 package com.saveourtool.processbuilder
 
 import com.saveourtool.processbuilder.exceptions.ProcessTimeoutException
+import com.saveourtool.processbuilder.utils.fs
 import com.saveourtool.processbuilder.utils.isCurrentOsWindows
+import com.saveourtool.processbuilder.utils.readLines
 
-import okio.Path
 import platform.posix.system
 
+import kotlin.time.Duration
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -23,28 +25,37 @@ import kotlinx.coroutines.runBlocking
     "MISSING_KDOC_ON_FUNCTION"
 )
 actual class ProcessBuilderInternal actual constructor(
-    private val stdoutFile: Path,
-    private val stderrFile: Path,
-    private val useInternalRedirections: Boolean
+    private val redirects: ProcessBuilderConfig.Redirects,
+    private val childProcessUserName: String?,
 ) {
-    actual fun prepareCmd(command: String) = if (useInternalRedirections) {
-        "($command) >$stdoutFile 2>$stderrFile"
-    } else {
-        command
+    actual fun appendShellCommand(command: String) = when (redirects) {
+        is ProcessBuilderConfig.Redirects.None -> command
+        is ProcessBuilderConfig.Redirects.Stdout -> "($command) >${redirects.redirectStdoutTo}"
+        is ProcessBuilderConfig.Redirects.Stderr -> "($command) 2>${redirects.redirectStderrTo}"
+        is ProcessBuilderConfig.Redirects.All -> "($command) >${redirects.redirectStdoutTo} 2>${redirects.redirectStderrTo}"
+        else -> throw IllegalStateException()
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    actual fun exec(
-        cmd: String,
-        timeOutMillis: Long
-    ): Int {
-        var status = -1
+    actual fun runCommandByNameOfAnotherUser(command: String): String = childProcessUserName?.let {
+        "runas /user:$it "
+    }
+        .orEmpty()
+        .plus(command)
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    actual fun execute(
+        cmd: String,
+        timeoutDuration: Duration,
+    ): ExecutionResult {
+        var status = -1
+        /*
+         * fixme: this should be implemented with win-api
+         */
         runBlocking {
             val timeOut = async(newSingleThreadContext("timeOut")) {
-                delay(timeOutMillis)
+                delay(timeoutDuration)
                 destroy(cmd)
-                throw ProcessTimeoutException(timeOutMillis, "Timeout is reached: $timeOutMillis")
+                throw ProcessTimeoutException(timeoutDuration, "Timeout is reached: $timeoutDuration")
             }
 
             val command = async {
@@ -57,7 +68,11 @@ actual class ProcessBuilderInternal actual constructor(
         if (status == -1) {
             error("Couldn't execute $cmd, exit status: $status")
         }
-        return status
+
+        val stdout = redirects.redirectStdoutTo?.let { fs.readLines(it) }.orEmpty()
+        val stderr = redirects.redirectStderrTo?.let { fs.readLines(it) }.orEmpty()
+
+        return ExecutionResult(status, stdout, stderr)
     }
 
     private fun destroy(cmd: String) {

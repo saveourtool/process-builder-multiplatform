@@ -61,27 +61,31 @@ kotlin {
         val macosArm64Main by getting
         val macosX64Main by getting
         val linuxX64Main by getting
-        val mingwX64Main by getting
 
-        val nativeMain by creating {
+        val posixMain by creating {
             dependsOn(commonMain)
             macosArm64Main.dependsOn(this)
             macosX64Main.dependsOn(this)
             linuxX64Main.dependsOn(this)
-            mingwX64Main.dependsOn(this)
         }
 
         val macosArm64Test by getting
         val macosX64Test by getting
         val linuxX64Test by getting
-        val mingwX64Test by getting
 
-        val nativeTest by creating {
+        val posixTest by creating {
             dependsOn(commonTest)
             macosArm64Test.dependsOn(this)
             macosX64Test.dependsOn(this)
             linuxX64Test.dependsOn(this)
-            mingwX64Test.dependsOn(this)
+        }
+
+        val mingwX64Main by getting {
+            dependsOn(commonMain)
+        }
+
+        val mingwX64Test by getting {
+            dependsOn(commonTest)
         }
     }
 }
