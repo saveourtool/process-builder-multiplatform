@@ -72,7 +72,7 @@ class ProcessBuilder(
         // Instance, containing platform-dependent realization of command execution
         val processBuilderInternal = ProcessBuilderInternal(redirectTo, config.childProcessUsername)
 
-        stdoutFile?.let {  path ->
+        stdoutFile?.let { path ->
             fs.createFile(path)
             logger.debug { "Created file $path" }
         }
