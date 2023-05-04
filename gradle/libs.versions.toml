@@ -1,8 +1,12 @@
 [versions]
+ktor = "2.1.2"
+kommand = "1.0.1"
+# kotlin
 kotlin = "1.8.20"
 kotlinx-datetime = "0.4.0"
 kotlinx-coroutines = "1.6.4"
 okio = "3.3.0"
+okio-extras = "1.1.3-SNAPSHOT"
 # linters
 diktat = "1.2.5"
 detekt = "1.22.0"
@@ -18,12 +22,15 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 diktat = { id = "org.cqfn.diktat.diktat-gradle-plugin", version.ref = "diktat" }
 
 [libraries]
+ktor-io = { module = "io.ktor:ktor-io", version.ref = "ktor" }
+kommand = { module = "com.kgit2:kommand", version.ref = "kommand" }
 # kotlin
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 # okio
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+okio-extras = { module = "com.saveourtool:okio-extras", version.ref = "okio-extras" }
 okio-fakefilesystem = { module = "com.squareup.okio:okio-fakefilesystem", version.ref = "okio" }
 # logging
 kotlin-logging = { module = "io.github.oshai:kotlin-logging", version.ref = "kotlin-logging" }

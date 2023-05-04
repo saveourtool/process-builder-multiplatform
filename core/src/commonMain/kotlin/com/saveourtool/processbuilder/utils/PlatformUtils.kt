@@ -3,11 +3,8 @@
  */
 
 @file:Suppress("FILE_NAME_MATCH_CLASS", "MatchingDeclarationName")
-@file:JvmName("PlatformUtilsJVM")
 
 package com.saveourtool.processbuilder.utils
-
-import kotlin.jvm.JvmName
 
 /**
  * Supported platforms

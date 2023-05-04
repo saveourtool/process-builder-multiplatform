@@ -5,72 +5,41 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 /**
- * Configuration file that
+ * Configuration file that is used to set up run configuration for [ProcessBuilder]'s run
  *
- * @property childProcessUsername User which should run the child process
- * @property defaultExecutionTimeout default timeout [Duration], can be overwritten in [ProcessBuilder.exec], 1 min by default
- * @property defaultWorkingDirectory [Path] to working directory (`cd $defaultWorkingDirectory` is appended to command)
+ * @property childProcessUsername user which should run the child process
+ * @property executionTimeout execution timeout as [Duration], 1 min by default
+ * @property workingDirectory [Path] to working directory (`cd $defaultWorkingDirectory` is appended to command)
  *           or [null] if no working dir change is required, can be overwritten in [ProcessBuilder.exec], [null] by default
- * @property defaultRedirects
+ * @property stdout WIP
+ * @property stderr WIP
  */
-data class ProcessBuilderConfig internal constructor(
+data class ProcessBuilderConfig(
     var childProcessUsername: String? = null,
-    var defaultExecutionTimeout: Duration = 1.minutes,
-    var defaultWorkingDirectory: Path? = null,
-    var defaultRedirects: Redirects = Redirects.None,
+    var executionTimeout: Duration = 1.minutes,
+    var workingDirectory: Path? = null,
+    var stdout: Redirect = Redirect.Pipe,
+    var stderr: Redirect = Redirect.Pipe,
 ) {
     /**
      * Configuration for redirects
-     *
-     * @property redirectStdoutTo [Path] to redirect stdout of a child process
-     * @property redirectStderrTo [Path] to redirect stderr of a child process
      */
-    sealed class Redirects(
-        val redirectStdoutTo: Path?,
-        val redirectStderrTo: Path?,
-    ) {
+    sealed interface Redirect {
         /**
-         * [Redirects] which defines no redirects:
-         *  * stdout will be read by [ProcessBuilder] through pipe
-         *  * stderr will be read by [ProcessBuilder] through pipe
-         *
-         * @see [Stdout]
-         * @see [Stderr]
-         * @see [All]
+         * Redirect should be inherited from parent process
          */
-        object None : Redirects(null, null)
+        object Inherit : Redirect
 
         /**
-         * [Redirects] which defines stdout redirect only:
-         *  * stdout will be redirected to [redirectStdoutTo]
-         *  * stderr will be read by [ProcessBuilder] through pipe
-         *
-         * @see [None]
-         * @see [Stderr]
-         * @see [All]
+         * Pipes should be used in order for redirect
          */
-        class Stdout(redirectStdoutTo: Path) : Redirects(redirectStdoutTo, null)
+        object Pipe : Redirect
 
         /**
-         * [Redirects] which defines stderr redirect only:
-         *  * stdout will be read by [ProcessBuilder] through pipe
-         *  * stderr will be redirected to [redirectStderrTo]
+         * Output should be redirected to file
          *
-         * @see [None]
-         * @see [Stdout]
-         * @see [All]
+         * @property path path to file
          */
-        class Stderr(redirectStderrTo: Path) : Redirects(null, redirectStderrTo)
-
-        /**
-         * [Redirects] which defines stdout and stderr redirects:
-         *  * stdout will be redirected to [redirectStdoutTo]
-         *  * stderr will be redirected to [redirectStderrTo]
-         *
-         * @see [None]
-         * @see [Stdout]
-         * @see [All]
-         */
-        class All(redirectStdoutTo: Path, redirectStderrTo: Path) : Redirects(redirectStdoutTo, redirectStderrTo)
+        class File(val path: Path) : Redirect
     }
 }
