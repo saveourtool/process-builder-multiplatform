@@ -86,7 +86,7 @@ class Preprocessor(
             } else {
                 ""
             }
-            val listOfCommands = if (separator != "") command.split(separator) as MutableList<String> else mutableListOf(command)
+            val listOfCommands = if (separator != "") command.split(separator).toMutableList() else mutableListOf(command)
             listOfCommands.forEachIndexed { index, cmd ->
                 if (cmd.contains("echo")) {
                     // TODO: https://github.com/saveourtool/process-builder-multiplatform/issues/5
