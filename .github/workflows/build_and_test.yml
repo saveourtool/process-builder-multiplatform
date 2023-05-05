@@ -46,8 +46,6 @@ jobs:
             build
             -x detekt
             -Pdetekt.multiplatform.disabled=true
-            -PgprUser=${{ github.actor }}
-            -PgprKey=${{ secrets.GITHUB_TOKEN }}
             -Pgpr.user=${{ github.actor }}
             -Pgpr.key=${{ secrets.GITHUB_TOKEN }}
             --scan
