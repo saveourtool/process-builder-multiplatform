@@ -5,6 +5,16 @@ run {
     dependencyResolutionManagement {
         repositories {
             mavenCentral()
+            maven {
+                name = "saveourtool/okio-extras"
+                url = uri("https://maven.pkg.github.com/saveourtool/okio-extras")
+                credentials {
+                    username = providers.gradleProperty("gpr.user").orNull
+                        ?: System.getenv("GITHUB_ACTOR")
+                    password = providers.gradleProperty("gpr.key").orNull
+                        ?: System.getenv("GITHUB_TOKEN")
+                }
+            }
         }
     }
 }
@@ -20,8 +30,6 @@ plugins {
     id("com.gradle.enterprise") version "3.12.6"
 }
 
-include("core")
-
 gradleEnterprise {
     if (System.getenv("CI") != null) {
         buildScan {
@@ -31,3 +39,9 @@ gradleEnterprise {
         }
     }
 }
+
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
+include("core")
+include("engine-save")
+// todo: include("engine-kommand")

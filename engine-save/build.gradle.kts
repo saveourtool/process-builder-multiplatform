@@ -27,7 +27,9 @@ kotlin {
 
         val commonMain by getting {
             dependencies {
+                implementation(projects.core)
                 api(libs.okio)
+                implementation(libs.okio.extras)
 
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlinx.datetime)
@@ -61,32 +63,28 @@ kotlin {
 
         val macosArm64Main by getting
         val macosX64Main by getting
+        val mingwX64Main by getting
         val linuxX64Main by getting
 
-        val posixMain by creating {
+        val nativeMain by creating {
             dependsOn(commonMain)
             macosArm64Main.dependsOn(this)
             macosX64Main.dependsOn(this)
+            mingwX64Main.dependsOn(this)
             linuxX64Main.dependsOn(this)
         }
 
         val macosArm64Test by getting
         val macosX64Test by getting
+        val mingwX64Test by getting
         val linuxX64Test by getting
 
-        val posixTest by creating {
+        val nativeTest by creating {
             dependsOn(commonTest)
             macosArm64Test.dependsOn(this)
             macosX64Test.dependsOn(this)
+            mingwX64Test.dependsOn(this)
             linuxX64Test.dependsOn(this)
-        }
-
-        val mingwX64Main by getting {
-            dependsOn(commonMain)
-        }
-
-        val mingwX64Test by getting {
-            dependsOn(commonTest)
         }
     }
 }

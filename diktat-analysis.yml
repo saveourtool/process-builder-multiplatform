@@ -3,8 +3,8 @@
   configuration:
     domainName: com.saveourtool.processbuilder
     kotlinVersion: 1.8.20
-    srcDirectories: "main,nativeMain,commonMain,jsMain,jvmMain"
-    testDirs: "test,nativeTest,commonTest,jvmTest,commonNonJsTest"
+    srcDirectories: "main,nativeMain,commonMain,jsMain,jvmMain,posixMain,mingwX64Main"
+    testDirs: "test,nativeTest,commonTest,jvmTest,commonNonJsTest,posixTest,mingwX64Test"
 - name: AVOID_NULL_CHECKS
   enabled: false
 - name: HEADER_MISSING_OR_WRONG_COPYRIGHT

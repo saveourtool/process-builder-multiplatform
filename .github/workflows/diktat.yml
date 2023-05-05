@@ -28,8 +28,8 @@ jobs:
             -Pdetekt.multiplatform.disabled=true
             --build-cache
             --continue
-            -PgprUser=${{ github.actor }}
-            -PgprKey=${{ secrets.GITHUB_TOKEN }}
+            -Pgpr.user=${{ github.actor }}
+            -Pgpr.key=${{ secrets.GITHUB_TOKEN }}
       - name: Upload SARIF report to Github
         uses: github/codeql-action/upload-sarif@v2
         if: ${{ always() }}
