@@ -13,14 +13,20 @@ import kotlinx.coroutines.TimeoutCancellationException
 
 object SaveEngine : Engine {
     override suspend fun execute(command: String, config: ProcessBuilderConfig): ExecutionResult {
-        val stdoutFile: Path = redirectStdout(config)
-        val stderrFile: Path = redirectStderr(config)
+        val stdoutFile: Path? = redirectStdout(config)
+        val stderrFile: Path? = redirectStderr(config)
 
         val processBuilderInternal = ProcessBuilderInternal(config)
-        fs.createFile(stdoutFile).also { logger.debug { "Created stdout file $it" } }
-        fs.createFile(stderrFile).also { logger.debug { "Created stderr file $it" } }
+        val redirectStdoutModifier = stdoutFile?.let { stdoutPath ->
+            fs.createFile(stdoutPath).also { logger.debug { "Created stdout file $it" } }
+            ">$stdoutPath"
+        }.orEmpty()
+        val redirectStderrModifier = stderrFile?.let { stderrPath ->
+            fs.createFile(stderrPath).also { logger.debug { "Created stderr file $it" } }
+            "2>$stderrPath"
+        }
 
-        val cmd = "($command) >$stdoutFile 2>$stderrFile"
+        val cmd = "($command) $redirectStdoutModifier $redirectStderrModifier"
 
         logger.debug { "Executing: $cmd with timeout ${config.executionTimeout}" }
         @Suppress("TooGenericExceptionCaught")
@@ -33,8 +39,8 @@ object SaveEngine : Engine {
             cleanup(stdoutFile, stderrFile, config)
             logErrorAndThrowProcessBuilderException(ex.message ?: "Couldn't execute $cmd")
         }
-        val stdout: List<String> = run { fs.readLines(stdoutFile) }
-        val stderr: List<String> = run { fs.readLines(stderrFile) }
+        val stdout: List<String> = run { stdoutFile?.let { fs.readLines(it) }.orEmpty() }
+        val stderr: List<String> = run { stderrFile?.let { fs.readLines(it) }.orEmpty() }
         cleanup(stdoutFile, stderrFile, config)
         val executionResult = ExecutionResult(status, stdout, stderr)
         if (executionResult.stderr.isNotEmpty()) {
@@ -47,17 +53,17 @@ object SaveEngine : Engine {
      * For now, we use temp files for storing stdout and stderr, which should be cleaned up
      */
     private fun cleanup(
-        stdoutFile: Path,
-        stderrFile: Path,
+        stdoutFile: Path?,
+        stderrFile: Path?,
         config: ProcessBuilderConfig
     ) {
         try {
             if (config.stdout !is ProcessBuilderConfig.Redirect.File) {
-                fs.delete(stdoutFile)
+                stdoutFile?.let { fs.delete(it) }
             }
         } finally {
             if (config.stderr !is ProcessBuilderConfig.Redirect.File) {
-                fs.delete(stderrFile)
+                stderrFile?.let { fs.delete(it) }
             }
         }
     }
@@ -65,10 +71,10 @@ object SaveEngine : Engine {
     private fun redirect(
         redirectConfig: ProcessBuilderConfig.Redirect,
         defaultPath: Path,
-    ) = if (redirectConfig is ProcessBuilderConfig.Redirect.File) {
-        redirectConfig.path
-    } else {
-        defaultPath
+    ) = when (redirectConfig) {
+        is ProcessBuilderConfig.Redirect.File -> redirectConfig.path
+        is ProcessBuilderConfig.Redirect.Null -> null
+        else -> defaultPath
     }
 
     private fun redirectStdout(config: ProcessBuilderConfig) = redirect(config.stdout, "stdout.txt".toPath())

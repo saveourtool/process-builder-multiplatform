@@ -44,4 +44,4 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 include("core")
 include("engine-save")
-// todo: include("engine-kommand")
+include("engine-kommand")

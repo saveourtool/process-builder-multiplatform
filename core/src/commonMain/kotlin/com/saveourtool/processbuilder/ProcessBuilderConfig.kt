@@ -1,6 +1,10 @@
 package com.saveourtool.processbuilder
 
+import com.saveourtool.processbuilder.utils.CurrentOs
+import com.saveourtool.processbuilder.utils.fs
+import com.saveourtool.processbuilder.utils.getCurrentOs
 import okio.Path
+import okio.Path.Companion.toPath
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -36,10 +40,44 @@ data class ProcessBuilderConfig(
         object Pipe : Redirect
 
         /**
+         * Output should be discarded
+         */
+        object Null : Redirect {
+            override fun printToFileIfNeeded(stringsToPrint: List<String>): List<String> = emptyList()
+        }
+
+        /**
+         * @param stringsToPrint strings that should be printed
+         * @return [List] of [String] that should be a part of ExecutionResult class
+         */
+        fun printToFileIfNeeded(stringsToPrint: List<String>): List<String> = stringsToPrint
+
+        /**
          * Output should be redirected to file
          *
          * @property path path to file
          */
-        class File(val path: Path) : Redirect
+        class File(val path: Path) : Redirect {
+            /**
+             * Flag that determines if [path] is `/dev/null` or `NUL`
+             */
+            private val isNullAlias = path == getNullAlias()
+
+            /**
+             * @param stringsToPrint list of strings that should be printed
+             */
+            override fun printToFileIfNeeded(stringsToPrint: List<String>): List<String> {
+                if (!isNullAlias) {
+                    fs.write(path) { stringsToPrint.forEach(::writeUtf8) }
+                }
+                return emptyList()
+            }
+            companion object {
+                private fun getNullAlias(os: CurrentOs = getCurrentOs()) = when (os) {
+                    CurrentOs.WINDOWS -> "NUL".toPath()
+                    else -> "/dev/null".toPath()
+                }
+            }
+        }
     }
 }
