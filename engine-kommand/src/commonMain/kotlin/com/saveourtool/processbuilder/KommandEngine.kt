@@ -34,9 +34,11 @@ object KommandEngine : Engine {
             .stderr(stderr)
             .spawn()
         return scope.async {
-            val stdoutLines = child.getChildStdout()?.lines()?.toList().orEmpty()
+            val stdoutLines = child.getChildStdout()?.lines()?.toList()
+                .orEmpty()
                 .let(stdout::printToFileIfNeeded)
-            val stderrLines = child.getChildStderr()?.lines()?.toList().orEmpty()
+            val stderrLines = child.getChildStderr()?.lines()?.toList()
+                .orEmpty()
                 .let(stderr::printToFileIfNeeded)
             val childExitStatus = child.wait()
             val executionResult = ExecutionResult(
