@@ -1,5 +1,8 @@
-import com.saveourtool.processbuilder.*
-
+import com.saveourtool.processbuilder.configureDetekt
+import com.saveourtool.processbuilder.configureDiktat
+import com.saveourtool.processbuilder.configurePublishing
+import com.saveourtool.processbuilder.configureVersioning
+import com.saveourtool.processbuilder.createDetektTask
 group = "com.saveourtool"
 description = "Kotlin Process Builder"
 
