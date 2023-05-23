@@ -8,20 +8,31 @@ import okio.fakefilesystem.FakeFileSystem
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.runBlocking
 
-val fs: FileSystem = FakeFileSystem()
+private val fs: FileSystem = FakeFileSystem()
 
 class ProcessBuilderTest {
     private val processBuilder = ProcessBuilder(KommandEngine, fs)
 
     @Test
     fun `check stdout`() = runBlocking {
-        val actualResult = processBuilder.execute("echo something")
+        val actualResult = processBuilder.execute("echo something") {
+            executionTimeout = 30.seconds
+        }
         println(actualResult)
         assertEquals(emptyList(), actualResult.stderr)
         assertEquals(0, actualResult.code)
         assertEquals(listOf("something"), actualResult.stdout)
+    }
+
+    @Test
+    fun `check multiline stdout`() = runBlocking {
+        val actualResult = processBuilder.execute("echo \"foo\nbar\"")
+        assertEquals(emptyList(), actualResult.stderr)
+        assertEquals(0, actualResult.code)
+        assertEquals(listOf("foo", "bar"), actualResult.stdout)
     }
 
     @Test

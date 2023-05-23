@@ -1,3 +1,4 @@
+import com.saveourtool.processbuilder.Versions
 import com.saveourtool.processbuilder.configureDetekt
 import com.saveourtool.processbuilder.configureDiktat
 
@@ -7,7 +8,7 @@ plugins {
 
 kotlin {
     jvm {
-        jvmToolchain(11)
+        jvmToolchain(Versions.jdk)
         withJava()
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
@@ -96,3 +97,4 @@ kotlin {
 
 configureDetekt()
 configureDiktat()
+// configurePublishing()
