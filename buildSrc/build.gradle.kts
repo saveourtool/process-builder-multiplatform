@@ -13,4 +13,5 @@ dependencies {
     implementation(libs.diktat.gradle.plugin)
     implementation(libs.detekt.gradle.plugin)
     implementation(libs.kotlin.gradle.plugin)
+    implementation(libs.reckon.gradle.plugin)
 }
