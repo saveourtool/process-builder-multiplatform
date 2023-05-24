@@ -47,7 +47,7 @@ private fun Project.configurePublications() {
                 val project = this@configurePublications
                 name.set(project.name)
                 description.set(project.description ?: project.name)
-                url.set("https://github.com/saveourtool/${project.name}")
+                url.set("https://github.com/saveourtool/${rootProject.name}")
                 licenses {
                     license {
                         name.set("MIT License")
@@ -63,9 +63,9 @@ private fun Project.configurePublications() {
                     }
                 }
                 scm {
-                    url.set("https://github.com/saveourtool/${project.name}")
-                    connection.set("scm:git:https://github.com/saveourtool/${project.name}.git")
-                    developerConnection.set("scm:git:git@github.com:saveourtool/${project.name}.git")
+                    url.set("https://github.com/saveourtool/${rootProject.name}")
+                    connection.set("scm:git:https://github.com/saveourtool/${rootProject.name}.git")
+                    developerConnection.set("scm:git:git@github.com:saveourtool/${rootProject.name}.git")
                 }
             }
         }
