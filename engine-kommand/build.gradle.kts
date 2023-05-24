@@ -1,6 +1,7 @@
 import com.saveourtool.processbuilder.Versions
 import com.saveourtool.processbuilder.configureDetekt
 import com.saveourtool.processbuilder.configureDiktat
+import com.saveourtool.processbuilder.configurePublishing
 
 plugins {
     kotlin("multiplatform")
@@ -97,4 +98,4 @@ kotlin {
 
 configureDetekt()
 configureDiktat()
-// configurePublishing()
+configurePublishing()

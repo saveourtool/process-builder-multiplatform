@@ -20,7 +20,6 @@ fun Project.configurePublishing() {
 private fun Project.configureGitHubPublishing() {
     apply(plugin = "maven-publish")
     configure<PublishingExtension> {
-        println("${rootProject.name}/${project.name}")
         repositories {
             maven {
                 name = "GitHub"

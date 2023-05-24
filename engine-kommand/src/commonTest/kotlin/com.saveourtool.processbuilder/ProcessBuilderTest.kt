@@ -21,7 +21,6 @@ class ProcessBuilderTest {
         val actualResult = processBuilder.execute("echo something") {
             executionTimeout = 30.seconds
         }
-        println(actualResult)
         assertEquals(emptyList(), actualResult.stderr)
         assertEquals(0, actualResult.code)
         assertEquals(listOf("something"), actualResult.stdout)
