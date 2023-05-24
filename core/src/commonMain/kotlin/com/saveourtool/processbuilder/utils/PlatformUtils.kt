@@ -29,4 +29,4 @@ expect fun getCurrentOs(): CurrentOs
  *
  * @return true if current OS is Windows
  */
-fun isCurrentOsWindows(): Boolean = (getCurrentOs() == CurrentOs.WINDOWS)
+fun isCurrentOsWindows(): Boolean = getCurrentOs() == CurrentOs.WINDOWS
