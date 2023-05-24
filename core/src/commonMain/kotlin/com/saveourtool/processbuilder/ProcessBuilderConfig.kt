@@ -65,12 +65,13 @@ data class ProcessBuilderConfig(
 
             /**
              * @param stringsToPrint list of strings that should be printed
+             * @return [stringsToPrint]
              */
-            override fun printToFileIfNeeded(stringsToPrint: List<String>): List<String> {
-                if (!isNullAlias) {
-                    fs.write(path) { stringsToPrint.forEach(::writeUtf8) }
-                }
-                return emptyList()
+            override fun printToFileIfNeeded(stringsToPrint: List<String>): List<String> = if (!isNullAlias) {
+                fs.write(path) { stringsToPrint.forEach(::writeUtf8) }
+                stringsToPrint
+            } else {
+                emptyList()
             }
             companion object {
                 private fun getNullAlias(os: CurrentOs = getCurrentOs()) = when (os) {

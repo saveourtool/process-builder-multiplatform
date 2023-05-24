@@ -31,7 +31,7 @@ kotlin {
             dependencies {
                 implementation(projects.core)
                 api(libs.okio)
-                implementation(libs.okio.extras)
+                api(libs.okio.extras)
 
                 implementation(libs.kotlin.logging)
                 implementation(libs.kotlinx.datetime)

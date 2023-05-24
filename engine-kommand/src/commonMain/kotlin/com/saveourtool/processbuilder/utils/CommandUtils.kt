@@ -50,7 +50,16 @@ suspend fun Child.readStderr() = getReceiveChannelFor(getChildStderr())
 private fun ProcessBuilderConfig.Redirect.toStdio() = when (this) {
     is ProcessBuilderConfig.Redirect.Inherit -> Stdio.Inherit
     is ProcessBuilderConfig.Redirect.Pipe -> Stdio.Pipe
+    /**
+     * There are three possible ways in kommand: Pipe, Inherit and Null.
+     * The best way is either to use Pipe, or modify a command with pipes
+     *  `>filename 2>filename`
+     */
     is ProcessBuilderConfig.Redirect.File -> Stdio.Pipe
+    /**
+     * There are three possible ways in kommand: Pipe, Inherit and Null.
+     * Null might cause errors as it closes the fd, so the best way is to redirect to `/dev/null`
+     */
     is ProcessBuilderConfig.Redirect.Null -> Stdio.Pipe
 }
 

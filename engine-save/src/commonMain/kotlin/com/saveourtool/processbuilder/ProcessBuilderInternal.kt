@@ -9,7 +9,7 @@ package com.saveourtool.processbuilder
  *
  * @param config [ProcessBuilderConfig] that should be used for execution configuration
  */
-expect class ProcessBuilderInternal(config: ProcessBuilderConfig) {
+expect class ProcessBuilderInternal internal constructor(config: ProcessBuilderConfig) {
     /**
      * Execute [cmd] and wait for its completion.
      *
