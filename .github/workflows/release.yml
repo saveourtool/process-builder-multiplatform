@@ -86,6 +86,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # cross-compilation seem to work fine
+      - name: 'Publish a release (Mac OS M1)'
+        id: publish-macos-m1
+        if: ${{ runner.os == 'macOS' }}
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: wrapper
+          arguments: |
+            build
+            publishMacosArm64PublicationToGitHubRepository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   github_release:
     needs: release
     name: 'Github Release'
